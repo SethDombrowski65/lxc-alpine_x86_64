@@ -56,14 +56,11 @@ func main() {
 			
 			log.Printf("📦 开始构建 Alpine %s %s 变体", 任务.版本, 任务.变体)
 			
-			// 使用 sudo distrobuilder 构建镜像，直接输出到目标目录
-			目标文件 := fmt.Sprintf("alpine_%s_x86_64_%s.tar.xz", 任务.版本, 任务.变体)
+			// 使用 sudo distrobuilder 构建镜像
 			构建命令 := exec.Command("sudo", "distrobuilder", "build-lxc", "configs/alpine.yaml", 
 				"-o", "image.release="+任务.版本,
 				"-o", "image.architecture=x86_64",
-				"-o", "image.variant="+任务.变体,
-				"--output", "output",
-				"--filename", 目标文件)
+				"-o", "image.variant="+任务.变体)
 			
 			// 捕获命令输出
 			var stdout, stderr strings.Builder
@@ -77,12 +74,25 @@ func main() {
 				return
 			}
 			
-			// 检查构建是否成功
-			目标文件路径 := filepath.Join("output", 目标文件)
-			if _, err := os.Stat(目标文件路径); err == nil {
+			// 重命名并移动镜像文件，使用 sudo 确保权限
+			源文件 := "rootfs.tar.xz"
+			目标文件 := fmt.Sprintf("alpine_%s_x86_64_%s.tar.xz", 任务.版本, 任务.变体)
+			
+			if _, err := os.Stat(源文件); err == nil {
+				// 使用 sudo 移动文件并设置权限
+				移动命令 := exec.Command("sudo", "mv", 源文件, filepath.Join("output", 目标文件))
+				if err := 移动命令.Run(); err != nil {
+					错误通道 <- fmt.Errorf("移动镜像文件 %s 失败: %v", 目标文件, err)
+					return
+				}
+				// 使用 sudo 修改文件权限
+				权限命令 := exec.Command("sudo", "chmod", "644", filepath.Join("output", 目标文件))
+				if err := 权限命令.Run(); err != nil {
+					log.Printf("⚠ 警告: 修改文件 %s 权限失败: %v", 目标文件, err)
+				}
 				log.Printf("✅ 完成构建: %s", 目标文件)
 			} else {
-				错误通道 <- fmt.Errorf("未找到构建文件: %s", 目标文件路径)
+				错误通道 <- fmt.Errorf("未找到构建文件: %s", 源文件)
 				return
 			}
 		}(任务)
