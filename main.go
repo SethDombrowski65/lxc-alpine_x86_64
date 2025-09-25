@@ -25,8 +25,8 @@ func main() {
 		for _, 变体 := range 支持的变体列表 {
 			log.Printf("正在构建 Alpine %s %s 变体", 版本, 变体)
 			
-			// 使用 distrobuilder 构建镜像
-			构建命令 := exec.Command("distrobuilder", "build-lxc", "configs/alpine.yaml", 
+			// 使用 sudo distrobuilder 构建镜像（需要 root 权限）
+			构建命令 := exec.Command("sudo", "distrobuilder", "build-lxc", "configs/alpine.yaml", 
 				"-o", "image.release="+版本,
 				"-o", "image.architecture=x86_64",
 				"-o", "image.variant="+变体)
