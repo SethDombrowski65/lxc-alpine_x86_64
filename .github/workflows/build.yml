@@ -7,8 +7,8 @@ on:
   pull_request:
     branches: [ main, master ]
   schedule:
-    - cron: '0 2 * * *'  # Daily at 02:00 UTC
-  workflow_dispatch:  # Manual trigger
+    - cron: '0 2 * * *'
+  workflow_dispatch:
 
 env:
   GO_VERSION: '1.21'
@@ -37,28 +37,11 @@ jobs:
 
     - name: Build binary
       run: |
-        make build
-        ./${{ env.BINARY_NAME }} list-versions
+        go build -o ${{ env.BINARY_NAME }} main.go
 
-    - name: Build Alpine 3.19 images
+    - name: Build all Alpine images
       run: |
-        ./${{ env.BINARY_NAME }} build 3.19 default
-        ./${{ env.BINARY_NAME }} build 3.19 cloud
-
-    - name: Build Alpine 3.20 images
-      run: |
-        ./${{ env.BINARY_NAME }} build 3.20 default
-        ./${{ env.BINARY_NAME }} build 3.20 cloud
-
-    - name: Build Alpine 3.21 images
-      run: |
-        ./${{ env.BINARY_NAME }} build 3.21 default
-        ./${{ env.BINARY_NAME }} build 3.21 cloud
-
-    - name: Build Alpine 3.22 images
-      run: |
-        ./${{ env.BINARY_NAME }} build 3.22 default
-        ./${{ env.BINARY_NAME }} build 3.22 cloud
+        ./${{ env.BINARY_NAME }}
 
     - name: List built artifacts
       run: |
