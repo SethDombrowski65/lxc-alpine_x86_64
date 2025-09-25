@@ -1,0 +1,102 @@
+image:
+  distribution: "alpinelinux"
+  release: "3.22"  # Will be overridden during build
+
+source:
+  downloader: alpinelinux-http
+  same_as: "3.22"  # Will be overridden during build
+  url: https://dl-cdn.alpinelinux.org/alpine/
+
+targets:
+  lxc:
+    create_message: |
+      You just created an {{ image.description }} container.
+
+    config:
+    - type: all
+      before: 5
+      content: |-
+        lxc.include = LXC_TEMPLATE_CONFIG/alpine.common.conf
+    - type: user
+      before: 5
+      content: |-
+        lxc.include = LXC_TEMPLATE_CONFIG/alpine.userns.conf
+    - type: all
+      after: 4
+      content: |-
+        lxc.include = LXC_TEMPLATE_CONFIG/common.conf
+    - type: user
+      after: 4
+      content: |-
+        lxc.include = LXC_TEMPLATE_CONFIG/userns.conf
+    - type: all
+      content: |-
+        lxc.arch = {{ image.architecture_personality }}
+
+packages:
+  manager: apk
+  update: true
+  cleanup: true
+  sets:
+  - packages:
+    - alpine-base
+    - logrotate
+    - doas
+    - curl
+    - wget
+    - bash
+    - lsof
+    - sshpass
+    - openssh-server
+    - openssh-keygen
+    - cronie
+    - iptables
+    - dos2unix
+    action: install
+
+  - packages:
+    - cloud-init
+    - e2fsprogs-extra
+    action: install
+    variants:
+    - cloud
+
+files:
+- path: /etc/hostname
+  generator: hostname
+
+- path: /etc/hosts
+  generator: hosts
+
+- path: /etc/network/interfaces
+  generator: dump
+  content: |-
+    auto eth0
+    iface eth0 inet dhcp
+    hostname $(hostname)
+
+actions:
+- trigger: post-packages
+  action: |-
+    #!/bin/sh
+    set -eux
+    rm -f /var/cache/apk/*
+
+- trigger: post-packages
+  action: |-
+    #!/bin/sh
+    set -eux
+    sed -i 's/#rc_sys=""/rc_sys="lxc"/' /etc/rc.conf
+    sed -i 's/-lxc//' /etc/init.d/localmount
+
+- trigger: post-files
+  action: |-
+    #!/bin/sh
+    set -eux
+    cd /etc/ssh || true
+    ssh-keygen -A || true
+    sed -i 's/^#\?Port.*/Port 22/g' /etc/ssh/sshd_config || true
+    sed -i '/^#PermitRootLogin\|PermitRootLogin/c PermitRootLogin yes' /etc/ssh/sshd_config || true
+    sed -i "s/^#\?PasswordAuthentication.*/PasswordAuthentication yes/g" /etc/ssh/sshd_config || true
+    /usr/sbin/sshd || true
+    rc-update add sshd default || true
