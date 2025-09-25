@@ -68,9 +68,7 @@ func main() {
 			构建命令.Stderr = &stderr
 			
 			if err := 构建命令.Run(); err != nil {
-				错误信息 := fmt.Sprintf("构建 Alpine %s %s 失败: %v
-输出: %s
-错误: %s", 
+				错误信息 := fmt.Sprintf("构建 Alpine %s %s 失败: %v 输出: %s 错误: %s", 
 					任务.版本, 任务.变体, err, stdout.String(), stderr.String())
 				错误通道 <- fmt.Errorf(错误信息)
 				return
