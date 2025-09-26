@@ -275,17 +275,6 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
-    needs: [
-      build-alpine-3-19-default,
-      build-alpine-3-19-cloud,
-      build-alpine-3-20-default,
-      build-alpine-3-20-cloud,
-      build-alpine-3-21-default,
-      build-alpine-3-21-cloud,
-      build-alpine-3-22-default,
-      build-alpine-3-22-cloud
-    ]
     permissions:
       contents: write
     
