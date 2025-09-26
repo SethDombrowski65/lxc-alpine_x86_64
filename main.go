@@ -14,6 +14,7 @@ import (
 type 构建任务 struct {
 	版本 string
 	变体 string
+	工作目录 string
 }
 
 func main() {
@@ -31,7 +32,8 @@ func main() {
 	var 任务列表 []构建任务
 	for _, 版本 := range 支持的版本列表 {
 		for _, 变体 := range 支持的变体列表 {
-			任务列表 = append(任务列表, 构建任务{版本: 版本, 变体: 变体})
+			工作目录 := fmt.Sprintf("build_%s_%s", 版本, 变体)
+			任务列表 = append(任务列表, 构建任务{版本: 版本, 变体: 变体, 工作目录: 工作目录})
 		}
 	}
 	
@@ -56,8 +58,38 @@ func main() {
 			
 			log.Printf("📦 开始构建 Alpine %s %s 变体", 任务.版本, 任务.变体)
 			
+			// 为每个任务创建独立的工作目录
+			if err := os.MkdirAll(任务.工作目录, 0755); err != nil {
+				错误通道 <- fmt.Errorf("创建工作目录 %s 失败: %v", 任务.工作目录, err)
+				return
+			}
+			
+			// 复制配置文件到工作目录
+			配置源文件 := "configs/alpine.yaml"
+			配置目标文件 := filepath.Join(任务.工作目录, "alpine.yaml")
+			if err := copyFile(配置源文件, 配置目标文件); err != nil {
+				错误通道 <- fmt.Errorf("复制配置文件失败: %v", err)
+				return
+			}
+			
+			// 切换到工作目录执行构建
+			originalDir, _ := os.Getwd()
+			if err := os.Chdir(任务.工作目录); err != nil {
+				错误通道 <- fmt.Errorf("切换到工作目录 %s 失败: %v", 任务.工作目录, err)
+				return
+			}
+			defer func() {
+				if err := os.Chdir(originalDir); err != nil {
+					log.Printf("⚠ 警告: 切换回原目录失败: %v", err)
+				}
+				// 清理临时工作目录
+				if err := os.RemoveAll(任务.工作目录); err != nil {
+					log.Printf("⚠ 警告: 清理工作目录 %s 失败: %v", 任务.工作目录, err)
+				}
+			}()
+			
 			// 使用 sudo distrobuilder 构建镜像
-			构建命令 := exec.Command("sudo", "distrobuilder", "build-lxc", "configs/alpine.yaml", 
+			构建命令 := exec.Command("sudo", "distrobuilder", "build-lxc", "alpine.yaml", 
 				"-o", "image.release="+任务.版本,
 				"-o", "image.architecture=x86_64",
 				"-o", "image.variant="+任务.变体)
@@ -80,13 +112,13 @@ func main() {
 			
 			if _, err := os.Stat(源文件); err == nil {
 				// 使用 sudo 移动文件并设置权限
-				移动命令 := exec.Command("sudo", "mv", 源文件, filepath.Join("output", 目标文件))
+				移动命令 := exec.Command("sudo", "mv", 源文件, filepath.Join(originalDir, "output", 目标文件))
 				if err := 移动命令.Run(); err != nil {
 					错误通道 <- fmt.Errorf("移动镜像文件 %s 失败: %v", 目标文件, err)
 					return
 				}
 				// 使用 sudo 修改文件权限
-				权限命令 := exec.Command("sudo", "chmod", "644", filepath.Join("output", 目标文件))
+				权限命令 := exec.Command("sudo", "chmod", "644", filepath.Join(originalDir, "output", 目标文件))
 				if err := 权限命令.Run(); err != nil {
 					log.Printf("⚠ 警告: 修改文件 %s 权限失败: %v", 目标文件, err)
 				}
@@ -117,4 +149,13 @@ func main() {
 	}
 	
 	log.Printf("🎉 所有 %d 个 Alpine 镜像并发构建完成", len(任务列表))
+}
+
+// 复制文件函数
+func copyFile(源文件, 目标文件 string) error {
+	输入, err := os.ReadFile(源文件)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(目标文件, 输入, 0644)
 }
