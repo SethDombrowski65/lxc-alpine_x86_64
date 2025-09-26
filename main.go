@@ -64,6 +64,12 @@ func main() {
 				return
 			}
 			
+			// 检查目录是否创建成功
+			if _, err := os.Stat(任务.工作目录); err != nil {
+				错误通道 <- fmt.Errorf("工作目录 %s 不存在: %v", 任务.工作目录, err)
+				return
+			}
+			
 			// 复制配置文件到工作目录
 			配置源文件 := filepath.Join("configs", "alpine.yaml")
 			配置目标文件 := filepath.Join(任务.工作目录, "alpine.yaml")
@@ -73,9 +79,21 @@ func main() {
 			}
 			
 			// 切换到工作目录执行构建
-			originalDir, _ := os.Getwd()
-			if err := os.Chdir(任务.工作目录); err != nil {
-				错误通道 <- fmt.Errorf("切换到工作目录 %s 失败: %v", 任务.工作目录, err)
+			originalDir, err := os.Getwd()
+			if err != nil {
+				错误通道 <- fmt.Errorf("获取当前工作目录失败: %v", err)
+				return
+			}
+			
+			// 记录工作目录的绝对路径
+			工作目录绝对路径, err := filepath.Abs(任务.工作目录)
+			if err != nil {
+				错误通道 <- fmt.Errorf("获取工作目录绝对路径失败: %v", err)
+				return
+			}
+			
+			if err := os.Chdir(工作目录绝对路径); err != nil {
+				错误通道 <- fmt.Errorf("切换到工作目录 %s 失败: %v", 工作目录绝对路径, err)
 				return
 			}
 			defer func() {
