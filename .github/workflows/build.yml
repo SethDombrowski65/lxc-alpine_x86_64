@@ -1,13 +1,6 @@
-name: Multi-Jobs Alpine LXC Image Builder
+name: Alpine LXC Image Builder
 
 on:
-  push:
-    branches: [ main, master ]
-    tags: [ 'v*' ]
-  pull_request:
-    branches: [ main, master ]
-  schedule:
-    - cron: '0 2 * * *'
   workflow_dispatch:
 
 env:
@@ -15,35 +8,22 @@ env:
   BINARY_NAME: 'alpine-builder'
 
 jobs:
-  # 定义所有构建任务
   build-alpine-3-19-default:
     name: Build Alpine 3.19 Default
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
-      
-      - name: Install dependencies
-        run: |
+      - run: |
           sudo apt-get update
           sudo apt-get install -y snapd
           sudo snap install distrobuilder --classic
           sudo apt-get install -y debootstrap rsync gpg squashfs-tools git make
-      
-      - name: Build single image builder
-        run: |
-          go build -o ${{ env.BINARY_NAME }} main.go
-      
-      - name: Build Alpine 3.19 Default image
-        run: |
-          ./${{ env.BINARY_NAME }} --version 3.19 --variant default
-      
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - run: go build -o ${{ env.BINARY_NAME }} main.go
+      - run: ./${{ env.BINARY_NAME }} --version 3.19 --variant default
+      - uses: actions/upload-artifact@v4
         with:
           name: alpine-3.19-default
           path: output/alpine_3.19_x86_64_default.tar.xz
@@ -53,29 +33,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
-      
-      - name: Install dependencies
-        run: |
+      - run: |
           sudo apt-get update
           sudo apt-get install -y snapd
           sudo snap install distrobuilder --classic
           sudo apt-get install -y debootstrap rsync gpg squashfs-tools git make
-      
-      - name: Build single image builder
-        run: |
-          go build -o ${{ env.BINARY_NAME }} main.go
-      
-      - name: Build Alpine 3.19 Cloud image
-        run: |
-          ./${{ env.BINARY_NAME }} --version 3.19 --variant cloud
-      
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - run: go build -o ${{ env.BINARY_NAME }} main.go
+      - run: ./${{ env.BINARY_NAME }} --version 3.19 --variant cloud
+      - uses: actions/upload-artifact@v4
         with:
           name: alpine-3.19-cloud
           path: output/alpine_3.19_x86_64_cloud.tar.xz
@@ -85,29 +53,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
-      
-      - name: Install dependencies
-        run: |
+      - run: |
           sudo apt-get update
           sudo apt-get install -y snapd
           sudo snap install distrobuilder --classic
           sudo apt-get install -y debootstrap rsync gpg squashfs-tools git make
-      
-      - name: Build single image builder
-        run: |
-          go build -o ${{ env.BINARY_NAME }} main.go
-      
-      - name: Build Alpine 3.20 Default image
-        run: |
-          ./${{ env.BINARY_NAME }} --version 3.20 --variant default
-      
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - run: go build -o ${{ env.BINARY_NAME }} main.go
+      - run: ./${{ env.BINARY_NAME }} --version 3.20 --variant default
+      - uses: actions/upload-artifact@v4
         with:
           name: alpine-3.20-default
           path: output/alpine_3.20_x86_64_default.tar.xz
@@ -117,29 +73,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
-      
-      - name: Install dependencies
-        run: |
+      - run: |
           sudo apt-get update
           sudo apt-get install -y snapd
           sudo snap install distrobuilder --classic
           sudo apt-get install -y debootstrap rsync gpg squashfs-tools git make
-      
-      - name: Build single image builder
-        run: |
-          go build -o ${{ env.BINARY_NAME }} main.go
-      
-      - name: Build Alpine 3.20 Cloud image
-        run: |
-          ./${{ env.BINARY_NAME }} --version 3.20 --variant cloud
-      
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - run: go build -o ${{ env.BINARY_NAME }} main.go
+      - run: ./${{ env.BINARY_NAME }} --version 3.20 --variant cloud
+      - uses: actions/upload-artifact@v4
         with:
           name: alpine-3.20-cloud
           path: output/alpine_3.20_x86_64_cloud.tar.xz
@@ -149,29 +93,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
-      
-      - name: Install dependencies
-        run: |
+      - run: |
           sudo apt-get update
           sudo apt-get install -y snapd
           sudo snap install distrobuilder --classic
           sudo apt-get install -y debootstrap rsync gpg squashfs-tools git make
-      
-      - name: Build single image builder
-        run: |
-          go build -o ${{ env.BINARY_NAME }} main.go
-      
-      - name: Build Alpine 3.21 Default image
-        run: |
-          ./${{ env.BINARY_NAME }} --version 3.21 --variant default
-      
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - run: go build -o ${{ env.BINARY_NAME }} main.go
+      - run: ./${{ env.BINARY_NAME }} --version 3.21 --variant default
+      - uses: actions/upload-artifact@v4
         with:
           name: alpine-3.21-default
           path: output/alpine_3.21_x86_64_default.tar.xz
@@ -181,29 +113,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
-      
-      - name: Install dependencies
-        run: |
+      - run: |
           sudo apt-get update
           sudo apt-get install -y snapd
           sudo snap install distrobuilder --classic
           sudo apt-get install -y debootstrap rsync gpg squashfs-tools git make
-      
-      - name: Build single image builder
-        run: |
-          go build -o ${{ env.BINARY_NAME }} main.go
-      
-      - name: Build Alpine 3.21 Cloud image
-        run: |
-          ./${{ env.BINARY_NAME }} --version 3.21 --variant cloud
-      
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - run: go build -o ${{ env.BINARY_NAME }} main.go
+      - run: ./${{ env.BINARY_NAME }} --version 3.21 --variant cloud
+      - uses: actions/upload-artifact@v4
         with:
           name: alpine-3.21-cloud
           path: output/alpine_3.21_x86_64_cloud.tar.xz
@@ -213,29 +133,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
-      
-      - name: Install dependencies
-        run: |
+      - run: |
           sudo apt-get update
           sudo apt-get install -y snapd
           sudo snap install distrobuilder --classic
           sudo apt-get install -y debootstrap rsync gpg squashfs-tools git make
-      
-      - name: Build single image builder
-        run: |
-          go build -o ${{ env.BINARY_NAME }} main.go
-      
-      - name: Build Alpine 3.22 Default image
-        run: |
-          ./${{ env.BINARY_NAME }} --version 3.22 --variant default
-      
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - run: go build -o ${{ env.BINARY_NAME }} main.go
+      - run: ./${{ env.BINARY_NAME }} --version 3.22 --variant default
+      - uses: actions/upload-artifact@v4
         with:
           name: alpine-3.22-default
           path: output/alpine_3.22_x86_64_default.tar.xz
@@ -245,29 +153,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
-      
-      - name: Install dependencies
-        run: |
+      - run: |
           sudo apt-get update
           sudo apt-get install -y snapd
           sudo snap install distrobuilder --classic
           sudo apt-get install -y debootstrap rsync gpg squashfs-tools git make
-      
-      - name: Build single image builder
-        run: |
-          go build -o ${{ env.BINARY_NAME }} main.go
-      
-      - name: Build Alpine 3.22 Cloud image
-        run: |
-          ./${{ env.BINARY_NAME }} --version 3.22 --variant cloud
-      
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - run: go build -o ${{ env.BINARY_NAME }} main.go
+      - run: ./${{ env.BINARY_NAME }} --version 3.22 --variant cloud
+      - uses: actions/upload-artifact@v4
         with:
           name: alpine-3.22-cloud
           path: output/alpine_3.22_x86_64_cloud.tar.xz
@@ -275,7 +171,6 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
     needs: [
       build-alpine-3-19-default,
       build-alpine-3-19-cloud,
@@ -288,26 +183,15 @@ jobs:
     ]
     permissions:
       contents: write
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: release-artifacts
-
-    - name: List release files
-      run: |
-        echo "📦 准备发布的文件:"
-        find release-artifacts -name "*.tar.xz" -type f | sort
-        ls -la release-artifacts/
-
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: release-artifacts/*/*.tar.xz
-        generate_release_notes: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+      - run: find release-artifacts -name "*.tar.xz" -type f | sort
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: release-artifacts/*/*.tar.xz
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
