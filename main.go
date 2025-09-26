@@ -37,74 +37,49 @@ func main() {
 		}
 	}
 	
-	// 使用 WaitGroup 等待所有 goroutine 完成
-	var wg sync.WaitGroup
-	// 创建信号量控制并发数量（避免资源竞争）
-	并发限制 := make(chan struct{}, 4) // 同时构建4个镜像
+	// 错误列表
+	var 错误列表 []string
 	
-	// 错误通道
-	错误通道 := make(chan error, len(任务列表))
+	log.Printf("🚀 开始构建 %d 个 Alpine 镜像", len(任务列表))
 	
-	log.Printf("🚀 开始并发构建 %d 个 Alpine 镜像", len(任务列表))
-	
-	// 并发执行所有构建任务
+	// 顺序执行构建任务（先确保基本功能正常）
 	for _, 任务 := range 任务列表 {
-		wg.Add(1)
-		并发限制 <- struct{}{} // 获取信号量
+		log.Printf("📦 开始构建 Alpine %s %s 变体", 任务.版本, 任务.变体)
 		
-		go func(任务 构建任务) {
-			defer wg.Done()
-			defer func() { <-并发限制 }() // 释放信号量
-			
-			log.Printf("📦 开始构建 Alpine %s %s 变体", 任务.版本, 任务.变体)
-			
-			// 为每个任务创建独立的工作目录
-			if err := os.MkdirAll(任务.工作目录, 0755); err != nil {
-				错误通道 <- fmt.Errorf("创建工作目录 %s 失败: %v", 任务.工作目录, err)
-				return
+		// 为每个任务创建独立的工作目录
+		if err := os.MkdirAll(任务.工作目录, 0755); err != nil {
+			错误列表 = append(错误列表, fmt.Sprintf("创建工作目录 %s 失败: %v", 任务.工作目录, err))
+			continue
+		}
+		
+		// 复制配置文件到工作目录
+		配置源文件 := filepath.Join("configs", "alpine.yaml")
+		配置目标文件 := filepath.Join(任务.工作目录, "alpine.yaml")
+		if err := copyFile(配置源文件, 配置目标文件); err != nil {
+			错误列表 = append(错误列表, fmt.Sprintf("复制配置文件失败: %v", err))
+			continue
+		}
+		
+		// 切换到工作目录执行构建
+		originalDir, err := os.Getwd()
+		if err != nil {
+			错误列表 = append(错误列表, fmt.Sprintf("获取当前工作目录失败: %v", err))
+			continue
+		}
+		
+		if err := os.Chdir(任务.工作目录); err != nil {
+			错误列表 = append(错误列表, fmt.Sprintf("切换到工作目录 %s 失败: %v", 任务.工作目录, err))
+			continue
+		}
+		defer func() {
+			if err := os.Chdir(originalDir); err != nil {
+				log.Printf("⚠ 警告: 切换回原目录失败: %v", err)
 			}
-			
-			// 检查目录是否创建成功
-			if _, err := os.Stat(任务.工作目录); err != nil {
-				错误通道 <- fmt.Errorf("工作目录 %s 不存在: %v", 任务.工作目录, err)
-				return
+			// 清理临时工作目录
+			if err := os.RemoveAll(任务.工作目录); err != nil {
+				log.Printf("⚠ 警告: 清理工作目录 %s 失败: %v", 任务.工作目录, err)
 			}
-			
-			// 复制配置文件到工作目录
-			配置源文件 := filepath.Join("configs", "alpine.yaml")
-			配置目标文件 := filepath.Join(任务.工作目录, "alpine.yaml")
-			if err := copyFile(配置源文件, 配置目标文件); err != nil {
-				错误通道 <- fmt.Errorf("复制配置文件失败: %v", err)
-				return
-			}
-			
-			// 切换到工作目录执行构建
-			originalDir, err := os.Getwd()
-			if err != nil {
-				错误通道 <- fmt.Errorf("获取当前工作目录失败: %v", err)
-				return
-			}
-			
-			// 记录工作目录的绝对路径
-			工作目录绝对路径, err := filepath.Abs(任务.工作目录)
-			if err != nil {
-				错误通道 <- fmt.Errorf("获取工作目录绝对路径失败: %v", err)
-				return
-			}
-			
-			if err := os.Chdir(工作目录绝对路径); err != nil {
-				错误通道 <- fmt.Errorf("切换到工作目录 %s 失败: %v", 工作目录绝对路径, err)
-				return
-			}
-			defer func() {
-				if err := os.Chdir(originalDir); err != nil {
-					log.Printf("⚠ 警告: 切换回原目录失败: %v", err)
-				}
-				// 清理临时工作目录
-				if err := os.RemoveAll(任务.工作目录); err != nil {
-					log.Printf("⚠ 警告: 清理工作目录 %s 失败: %v", 任务.工作目录, err)
-				}
-			}()
+		}()
 			
 			// 使用 sudo distrobuilder 构建镜像
 			构建命令 := exec.Command("sudo", "distrobuilder", "build-lxc", "alpine.yaml", 
@@ -132,8 +107,8 @@ func main() {
 				// 使用 sudo 移动文件并设置权限
 				移动命令 := exec.Command("sudo", "mv", 源文件, filepath.Join(originalDir, "output", 目标文件))
 				if err := 移动命令.Run(); err != nil {
-					错误通道 <- fmt.Errorf("移动镜像文件 %s 失败: %v", 目标文件, err)
-					return
+					错误列表 = append(错误列表, fmt.Sprintf("移动镜像文件 %s 失败: %v", 目标文件, err))
+					continue
 				}
 				// 使用 sudo 修改文件权限
 				权限命令 := exec.Command("sudo", "chmod", "644", filepath.Join(originalDir, "output", 目标文件))
@@ -142,21 +117,10 @@ func main() {
 				}
 				log.Printf("✅ 完成构建: %s", 目标文件)
 			} else {
-				错误通道 <- fmt.Errorf("未找到构建文件: %s", 源文件)
-				return
+				错误列表 = append(错误列表, fmt.Sprintf("未找到构建文件: %s", 源文件))
+				continue
 			}
-		}(任务)
-	}
-	
-	// 等待所有任务完成
-	wg.Wait()
-	close(错误通道)
-	
-	// 检查是否有错误
-	var 错误列表 []string
-	for err := range 错误通道 {
-		错误列表 = append(错误列表, err.Error())
-	}
+		}
 	
 	if len(错误列表) > 0 {
 		log.Printf("❌ 构建过程中发生 %d 个错误:", len(错误列表))
