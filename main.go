@@ -65,7 +65,7 @@ func main() {
 			}
 			
 			// 复制配置文件到工作目录
-			配置源文件 := "configs/alpine.yaml"
+			配置源文件 := filepath.Join("configs", "alpine.yaml")
 			配置目标文件 := filepath.Join(任务.工作目录, "alpine.yaml")
 			if err := copyFile(配置源文件, 配置目标文件); err != nil {
 				错误通道 <- fmt.Errorf("复制配置文件失败: %v", err)
