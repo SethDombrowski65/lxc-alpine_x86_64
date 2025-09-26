@@ -289,17 +289,21 @@ jobs:
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
+        with:
+          path: downloaded-artifacts
       
       - name: List all built images
         run: |
           echo "🎉 所有 Alpine LXC 镜像构建完成:"
-          find . -name "*.tar.xz" -type f | sort
+          find downloaded-artifacts -name "*.tar.xz" -type f | sort
       
       - name: Create release package
         run: |
           mkdir -p alpine-lxc-images
-          find . -name "*.tar.xz" -exec cp {} alpine-lxc-images/ \;
+          # 从各个子目录复制镜像文件
+          find downloaded-artifacts -name "*.tar.xz" -exec cp {} alpine-lxc-images/ \;
           tar -czf alpine-lxc-images.tar.gz alpine-lxc-images/
+          ls -la alpine-lxc-images/
       
       - name: Upload final package
         uses: actions/upload-artifact@v4
@@ -310,7 +314,7 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     needs: combine-results
     
     steps:
