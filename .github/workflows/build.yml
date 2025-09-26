@@ -189,9 +189,17 @@ jobs:
         with:
           path: release-artifacts
       - run: find release-artifacts -name "*.tar.xz" -type f | sort
+      - name: Create tag for manual trigger
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag manual-$(date +%Y%m%d-%H%M%S)
+          git push origin manual-$(date +%Y%m%d-%H%M%S)
       - uses: softprops/action-gh-release@v1
         with:
           files: release-artifacts/*/*.tar.xz
           generate_release_notes: true
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
