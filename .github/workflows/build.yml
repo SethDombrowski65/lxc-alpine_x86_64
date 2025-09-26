@@ -272,10 +272,10 @@ jobs:
           name: alpine-3.22-cloud
           path: output/alpine_3.22_x86_64_cloud.tar.xz
 
-  # 汇总所有构建结果
-  combine-results:
-    name: Combine Results
+  release:
+    name: Create Release
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     needs: [
       build-alpine-3-19-default,
       build-alpine-3-19-cloud,
@@ -286,36 +286,6 @@ jobs:
       build-alpine-3-22-default,
       build-alpine-3-22-cloud
     ]
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: downloaded-artifacts
-      
-      - name: List all built images
-        run: |
-          echo "🎉 所有 Alpine LXC 镜像构建完成:"
-          find downloaded-artifacts -name "*.tar.xz" -type f | sort
-      
-      - name: Prepare individual artifacts
-        run: |
-          mkdir -p individual-artifacts
-          # 从各个子目录复制镜像文件到统一目录
-          find downloaded-artifacts -name "*.tar.xz" -exec cp {} individual-artifacts/ \;
-          ls -la individual-artifacts/
-      
-      - name: Upload individual artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: alpine-lxc-images-individual
-          path: individual-artifacts/
-          retention-days: 30
-
-  release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
-    needs: combine-results
     permissions:
       contents: write
     
@@ -323,10 +293,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Download individual artifacts
+    - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
-        name: alpine-lxc-images-individual
         path: release-artifacts
 
     - name: List release files
@@ -338,7 +307,7 @@ jobs:
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        files: release-artifacts/*.tar.xz
+        files: release-artifacts/*/*.tar.xz
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
